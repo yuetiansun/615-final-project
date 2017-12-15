@@ -1,6 +1,3 @@
----
-output: pdf_document
----
 615 Final Project: Analysis of Twitter with "Tax"
 ========================================================
 author: Yuetian Sun

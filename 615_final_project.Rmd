@@ -119,6 +119,7 @@ ggmap(map)+ggtitle("Geolocaion density plot for keyword 'tax'")+stat_density2d(
 aes(x = long, y = lat, alpha = ..level..),
 size = 0.5, bins = 3, data = coordinates_tidy,
 geom = "polygon",colour = "black")
+
 ```
 
 As we can see the plot above, the point plot and the density show that people in the east coast and north middle part of America have more twitters about "tax", which means in some sense they are more concerned about tax issue. We can guess that may be the east coast has lots of schools and has large population. The reformation of tax will have significant effect on this area. And also people live in the north middle parts of America don't have very high salary on average and the reduction of individual income tax can help them have better life. 
