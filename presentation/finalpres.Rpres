@@ -1,0 +1,241 @@
+615 Final Project: Analysis of Twitter with "Tax"
+========================================================
+author: Yuetian Sun
+date: December 15, 2017
+autosize: true
+
+Introduction
+========================================================
+As we all know that President Trump has published a policy about reformation of tax these days. This policy has significant effect on thousands of people’s life. This project aims to extract useful information when people twittering about tax finding out what people atitudes are and what they are most concerned about. This project is devided into several parts:
+
+- 1 Data Cleaning and Exploratory Data Analysis
+- 2 Emoji Analysis
+- 3 Text Analysis
+- 3.1 Topic Modeling
+- 3.2 Sentiment Analysis
+- 4 Conclusion
+
+
+1 Data Cleaning and Exploratory Data Analysis
+========================================================
+
+```{r,out.width="30%", echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+#load the download images related to the topic
+myimages<-list.files("./image", pattern = ".jpg", full.names = TRUE)
+myimages1 <- list.files("./image",pattern = '.png',full.names = TRUE)
+myimage <- c(myimages,myimages1)
+knitr :: include_graphics(myimage)
+```
+
+We use R making connection to Twitter and randomly select 47474 twitters with "tax" from 11/24/2018 to 12/04/2018. We would like to figure out the general situation about twittering with "tax"" across the US. Thus, we make a point plot and density plot on maps to have a first impression.
+
+1 Data Cleaning and Exploratory Data Analysis
+========================================================
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE, fig.width=6, fig.height=3}
+library(devtools)
+library(reshape)
+library(plyr)
+library(ggplot2)
+library(splitstackshape)
+library(stringr)
+library(maps)
+library(ggmap)
+#load the point plot
+usmap1 = readRDS("usmap1.rds")
+usmap1
+#plot the density plot
+map = readRDS("usmap2.rds")
+coordinates_tidy <-read.csv('tweets.map_tax.csv')
+ggmap(map)+ggtitle("Geolocaion density plot for keyword 'tax'")+stat_density2d(
+aes(x = long, y = lat, alpha = ..level..),
+size = 0.5, bins = 3, data = coordinates_tidy,
+geom = "polygon",colour = "black")
+```
+
+<small>The plots show that people in the east coast and middle north part of America twitter more about "tax"", which means in some sense they are more concerned about tax issue. We can guess that may be the east coast has lots of school and has large population. The reformation of tax will have significant effect on this area. And people in north middle parts don’t have very high salary on average and the reduction of individual income tax can help them have better life.</small>
+
+2 Emoji Analysis
+========================================================
+
+<small><small>Now Let us take a look of what emojis people would like to twitter about "tax". First of all, we need to clean the dataset and extract the emojis (emojis code) from the twitter we selected. Then by pairing the emojis code with emojis dictionary and emojis picture, we can get the original emojis. Here is the frequency table of the ten most commonly used emojis.</small></small>
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE, out.height=100}
+#make table of 10 most frequently used emojis
+emojis.count.p=readRDS("emojis_count_p.rds")
+    df.plot <- subset(emojis.count.p, rank <= 10)
+    knitr::kable(df.plot, caption='Most frequently used emojis')
+```
+
+2 Emoji Analysis
+========================================================
+Here is the frequency plot:
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE, fig.align='center', fig.height=4}
+#load the bar plot of 10 most frequently used emojis
+emojiplot1=readRDS("emojiplot1.rds")
+emojiplot1
+```
+The most frequently used emoji is money bag. This make sense because tax directly related to money and this should be the thing people most concerned about. The third emoji is chart with downwards trend. It may be a negative one used to express their life going down or it may be a positive one used to express the tax reduction. Also the fourth to sixth shows people concern about hospital fee, tuition fee and many other fee related to tax policy.
+
+2 Emoji Analysis
+========================================================
+
+<small>The next step is to compare emoji frequency between two different subsets of the data. There are multiple pairs of words you can choose as second keywords. Let’s use "Trump" and "cut" as an example.</small>
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+#make the table of emoji comparison
+emojis.comp.p=readRDS("emojis_comp_p.rds")
+table1 <- emojis.comp.p
+table1$name[4] <- "police cars light"
+table1$name[8] <- "regional indicator"
+table1$name[5] <- "regional indicator"
+table1$logor <- round(table1$logor,2)
+knitr::kable(table1, caption="Table of emoji comparison")
+```
+
+2 Emoji Analysis
+========================================================
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE, fig.align='center', fig.height=4}
+#load the emoji comparison plot
+emojiplot2=readRDS("emojiplot2.rds")
+emojiplot2
+```
+
+As we can see above, when people mention "Trump" in twitter with "tax", they tends to use face with tears of joy while people mention “cut” are more likely to use money bag. In additon, people who mention "cut" or "trump" are equal likely to use person with folded hands. May be they use it to hope for the good life. After exploring the emojis, we now focus on the text part of twitters.
+
+3 Text Analysis
+========================================================
+Now let us take a look of what words people would like to use when twittering with "tax". We make a table and a frequency plot of words showing up more than 1500 times.
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE, fig.align='center', fig.height=4}
+library(tidytext)
+library(tidyverse)
+library(wordcloud)
+library(RColorBrewer)
+library(tokenizers)
+library(tm)
+library(NLP)
+library(topicmodels)
+library(SnowballC)
+library(reshape2)
+tidy_tw <- read.csv("tweets.texttidy_tax.csv")
+#plot the bar plot of the freq of words
+tidy_tw %>%
+  count(word, sort = TRUE) %>%
+  filter(n > 1500) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill=word)) +
+  geom_col(alpha=0.8) +
+  xlab(NULL)+ylab("Frequency")+
+  coord_flip() +ggtitle("Bar plot of words frequency more than 1500")
+```
+From the bar plot above, we can find that people are concerning about cuting their bill, republican and voting things about tax. These make sense because the reducation tax policy is passed in senate and is comed up Trump, repulican party. And the aim of these policy is to cut the tax and promote American’s life.
+
+3.1 Topic Modeling
+========================================================
+<small><small><small>To take a further step, we conduct Topic Modeling and analyze what topic people will talk when twittering about tax. Topic Model is a type of statistical model for discovering the abstract "topics" that occur in a collection of documents.In this report, we focus on using LDA to conduct Topic Model. And we would like to choose Gibbs Sampling. The result topics are as follow:</small></small></small>
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+#load the topic modeling result
+m = readRDS("topic.rds")
+    d <- as.data.frame(m$Gibbs)
+    d <- d[,1:7]
+knitr::kable(d, caption = 'Ten topics for twitter tax')
+```
+
+3.1 Topic Modeling
+========================================================
+
+Here is how we indicate the result:
+
+As we can see from the above table, this is the 7 topics people would like to talk about when twittering tax. Now let’s indicate the first three topics. we can find that topic 1 contain words like "rich", "poor", "middle" and "class". Thus we can make an assumption that people care about how tax affects on different classes. The second topic has "Trump", "reform", "thank" and "lie" in it. Thus we can indicate that this may relate to topic President Trump and reformation of tax. In the third part, we have words "vote", "people", "support" and "follow". Therefore, we can view the third topic as people supporting degree on tax reduction.
+
+3.2 Sentiment Analysis
+========================================================
+
+Now let’s take a look on what people’s attitude on tax by conducting sentiment analysis. To start with, let us see what words people use to express their emotion. We can choose emotion like joy, angry, disgust. Here we only show joy as an example.
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+#sentiment analysis
+#take a look of the joy words in twitter with 'tax'
+nrcjoy <- get_sentiments("nrc") %>% 
+  filter(sentiment == "joy")
+stable <- tidy_tw %>%
+  inner_join(nrcjoy) %>%
+  count(word, sort = TRUE) %>% top_n(10)
+stable <- t(stable)
+colnames(stable) <- c("w1","w2","w3","w4","w5","w6","w7","w8","w9","w10")
+kable(stable, caption = "Table of top 10 joyful word")
+```
+
+As we can see from the above table, the most frequently used joyful words are "vote", "pay", "money" and "good". Thus, we can guess that people with positve opinion about "tax" are likely to talk about vote for the tax policy and the money things.
+
+3.2 Sentiment Analysis
+========================================================
+
+<small>Now let’s analyze people atitude by comparing the positive and negative words.</small>
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE, fig.align='center', fig.width=10, fig.height=4}
+#plot the num of positive -negative words
+twsentiment <- tidy_tw %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(index = line %/% 80, sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative)
+
+ggplot(twsentiment, aes(index, sentiment, fill=index)) +
+  geom_col(show.legend = FALSE)+ggtitle("Positive - negative words in every eighty twitter")+ labs(y = "number of positve words minus negative", x = 'every eighty twitter')
+```
+
+<small>As we can see from the positive - negative plot, the lines above horizontal line means the positve words are more than negative words in every eighty twitters. This graph show that the case positive words is more than negative happens more than the other case. That is to say, the number of positive words is larger than the number of negative words. Thus we can indicate that the on the average people show positive atitude when talking about tax. </small>
+
+3.2 Sentiment Analysis
+========================================================
+
+<small>We now interested in what most frequently positive and negative words people used.</small>
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE, fig.align='center', fig.height=3, fig.width=7}
+#make the table of positive and negative words
+bing_word_counts <- tidy_tw %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+#plot the freq of top 10 positive and negative words
+bing_word_counts %>%
+  group_by(sentiment) %>%
+  top_n(10) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(y = "Contribution to sentiment",
+       x = NULL) +
+  coord_flip()+ggtitle("Frequency of top 10 positive and negative words")
+```
+
+<small>People would likely to use positive words like "reform", "trump" and "rich". We can indicate that people tend to believe the reformation of tax published by Trump can help people become rich, wealthy. But as we can also find that some people use negative like "scam", "poor" and "break". Thus, although lots of people support the policy, there are some people think it is a scam and will make people poor.</small>
+
+3.2 Sentiment Analysis
+========================================================
+
+<small>To have a more intuitive way of the words and its frequency, I make word clouds of top 500 frequently used words and top 200 positive, negative words.</small>
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE, fig.height=5, fig.width=5}
+#Word Clouds
+pal2 <- brewer.pal(8,"Dark2")
+tidy_tw %>%
+  count(word) %>%
+  with(wordcloud(word, n, scale=c(8,.2),min.freq=3,
+max.words=500, random.order=FALSE,rot.per=.3, colors = pal2))
+#make the world clouds of positive vs. negative words  
+tidy_tw %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  acast(word ~ sentiment, value.var = "n", fill = 0) %>%
+  comparison.cloud(colors = c("#F8766D", "#00BFC4"), random.order=FALSE,rot.per=.3, max.words = 200)
+```
+<small>It is very clear that people concern about the about bill and money stuff most and then they also care about the policy itself. Besides, people with positive attitude would likely to think about the reform of tax will make them rich while people with negative attitude think the reduction of tax is a scam.</small>
+
+Conclusion
+========================================================
+
+<small><small>In this project, we care about how people think about the tax through twitter. We find that people living in east coast and north middle part show more concern about tax. Besides, by analyzing the emojis, we figue out that people are most concerned about money stuff. They care about hospital fee, tuition fee and many other fee related to tax policy. To narrow down, we use “trump” and “cut” as our second keywords. When people mention “trump” in twitter with “tax”, they tend to use face with tears of joy while people mention “cut” are more likely to use money bag. For the text part, from the bar plots, word clouds and tables, we can find that people are concerned about cuting their bill, republican and voting things about tax. And by conducting Topic Modeling, we find that people would likely to talk about how tax affects on different classes, President Trump and reformation of tax, and supporting degree on tax reduction. Additionaly, by conducting the Sentiment Analysis, we find that people show more postive attitude when twittering about tax and they tend to believe the reformation of tax can bring people good life.
+To sum up, when twittering about tax, people are most concerned about the reduction policy and how it affect their money and their life. In general, although some people think this policy is a scam, lots of people do believe this reformation will make them wealthy and they support Trump policy of cuting tax.</small></small>
